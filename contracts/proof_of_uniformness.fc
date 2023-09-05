@@ -1,0 +1,73 @@
+#pragma version >=0.2.0;
+#include "imports/stdlib.fc";
+
+forall X -> (tuple) to_tuple (X x) asm "NOP";
+(int) tlen (tuple t) asm "TLEN";
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+
+}
+
+tuple specific_empty_tuple(int len, int value){
+    tuple t = empty_tuple();
+    repeat(len){
+        t~tpush(value);
+    }
+    return t;
+}
+
+(tuple, ()) t_change(tuple t, int value, int index){
+    tuple new_tuple = empty_tuple();
+    int t_len = t.tlen();
+    int i = 0;
+    while(i < t_len){
+        if(i == index){
+            new_tuple~tpush(value);
+        }
+        else {
+            new_tuple~tpush(t.at(i));
+        }
+        i += 1;
+    }
+    return (new_tuple, ());
+}
+
+(tuple, ()) uniform_check(tuple frequency_table, tuple t, int min, int max){
+    int t_len = t.tlen();
+    int index = 0;
+    while(index < t_len){
+        int value = t.at(index);
+        int number = min;
+        while(number <= max){
+            if(value == number){
+                frequency_table~t_change(frequency_table.at(number - min) + 1, number - min);
+            }
+            number += 1;
+        }
+        index += 1;
+    }
+    return (frequency_table, ());
+}
+
+tuple get_random() method_id {
+    int min = 0;
+    int max = 1;
+    int repetition = 1 * (max - min + 1);
+    tuple frequency_table = specific_empty_tuple(max - min + 1, 0);
+    ;; int initial_secret_seed = 1234 + now();
+    ;; set_seed(initial_secret_seed);
+
+    int seed = 0;
+    int expected_value = 1000;
+    repeat(expected_value){
+        tuple result = empty_tuple();
+        repeat(repetition){
+            set_seed(seed + now());
+            result~tpush(rand(max - min + 1) + min);
+            seed += 1;
+        }
+        frequency_table~uniform_check(result, min, max);
+    }
+
+    return frequency_table;
+}
