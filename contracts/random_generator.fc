@@ -1,0 +1,24 @@
+#pragma version >=0.2.0;
+#include "imports/stdlib.fc";
+#include "imports/utils.fc";
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+
+}
+
+tuple random_generator(int n, int min, int max, int seed) method_id {
+    tuple random_tuple = empty_tuple();
+    set_seed(seed);
+    int generated_numbers = 0;
+    while(generated_numbers < n){
+        int random_number = 0;
+        do {
+            random_number = rand(max - min + 1) + min;
+        }
+        until(~ random_tuple.is_in?(random_number));
+        random_tuple~tpush(random_number);
+        generated_numbers += 1;
+    }
+
+    return random_tuple.tuple_to_cell(32).cell_to_tuple(32);
+}

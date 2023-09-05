@@ -1,0 +1,57 @@
+int tlen (tuple t) asm "TLEN";
+forall X -> (tuple, ()) cons_new(tuple tail, X head) inline asm(head tail) "CONS";
+
+int is_in?(tuple t, int value){ ;; to check if there is a special value in a tuple 
+    int index = 0;
+    repeat(t.tlen()){
+        if(t.at(index) == value){
+            return -1;
+        }
+        index += 1;
+    }
+
+    return 0;
+}
+
+cell tuple_to_cell(tuple t, int bit_len){ ;; to serialize a tuple into a builder
+    tuple builders = empty_tuple();
+    builder b = begin_cell();
+    int builder_counter = 0;
+    int empty_bits = 1023;
+    int index = 0;
+    repeat(t.tlen()){
+        if(empty_bits >= bit_len){
+            b~store_uint(t.at(index), bit_len);
+            empty_bits -= bit_len;
+        }
+        else {
+            builders~cons_new(b);
+            builder_counter += 1;
+            b = begin_cell();
+            empty_bits = 0;
+            b~store_uint(t.at(index), bit_len);
+            empty_bits -= bit_len;
+        }
+        index += 1;
+    }
+
+    builder last = b;
+    repeat(builder_counter) {
+        last = builders~list_next().store_ref(last.end_cell());
+    }
+
+    return last.end_cell();
+}
+
+tuple cell_to_tuple(cell c, int bits_len){ ;; to extract some numbers from a cell
+    tuple t = empty_tuple();
+    slice s = c.begin_parse();
+    while(~ s.slice_data_empty?()){
+        t~tpush(s~load_uint(bits_len));
+        if((s.slice_data_empty?()) & (~ s.slice_refs_empty?())){
+            s = s.preload_ref().begin_parse();
+        }
+    }
+
+    return t;
+}
